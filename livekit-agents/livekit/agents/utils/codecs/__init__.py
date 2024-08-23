@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from .mp3 import Mp3StreamDecoder
+from .pcm import PcmStreamDecoder
 
-__all__ = ["Mp3StreamDecoder"]
+__all__ = ["Mp3StreamDecoder", "PcmStreamDecoder"]

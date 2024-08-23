@@ -26,7 +26,7 @@ from .log import logger
 from .models import TTSModels, TTSVoices
 from .utils import AsyncAzureADTokenProvider
 
-OPENAI_TTS_SAMPLE_RATE = 24000
+OPENAI_TTS_SAMPLE_RATE = 16000
 OPENAI_TTS_CHANNELS = 1
 
 
@@ -121,11 +121,17 @@ class TTS(tts.TTS):
             input=text,
             model=self._opts.model,
             voice=self._opts.voice,
-            response_format="mp3",
+            response_format="pcm",  # PCM format assumed
             speed=self._opts.speed,
         )
 
-        return ChunkedStream(stream, text, self._opts)
+        # Initialize ChunkedStream with the appropriate parameters
+        return ChunkedStream(
+            oai_stream=stream,
+            text=text,
+            opts=self._opts,
+            
+        )
 
 
 class ChunkedStream(tts.ChunkedStream):
@@ -143,7 +149,11 @@ class ChunkedStream(tts.ChunkedStream):
     async def _main_task(self):
         request_id = utils.shortuuid()
         segment_id = utils.shortuuid()
-        decoder = utils.codecs.Mp3StreamDecoder()
+        decoder = utils.codecs.PcmStreamDecoder(
+            sample_rate=16000,
+            num_channels=1,   
+            samples_per_channel=128
+        )
         async with self._oai_stream as stream:
             async for data in stream.iter_bytes(4096):
                 for frame in decoder.decode_chunk(data):
